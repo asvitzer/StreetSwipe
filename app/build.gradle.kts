@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    id("kotlin-kapt")
 }
 
 android {
@@ -9,8 +10,8 @@ android {
 
     defaultConfig {
         applicationId = "com.asvitzer.streetswipe"
-        minSdk = 24
-        targetSdk = 34
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -18,6 +19,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        val backendUrl = project.property("EXAMPLE_BACKEND_URL").toString().trim('"')
+        buildConfigField("String", "EXAMPLE_BACKEND_URL", "\"$backendUrl\"")
     }
 
     buildTypes {
@@ -38,6 +42,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -66,4 +71,21 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    //DI
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+
+    //Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+    //viewModelScope
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    //Stripe
+    implementation (libs.stripeterminal)
+
+    // Network
+    implementation(libs.okhttp)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
 }
