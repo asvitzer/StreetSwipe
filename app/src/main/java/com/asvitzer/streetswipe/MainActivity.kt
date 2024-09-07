@@ -13,8 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavGraph
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
 import com.asvitzer.streetswipe.di.IoDispatcher
+import com.asvitzer.streetswipe.nav.Overview
+import com.asvitzer.streetswipe.nav.Request
+import com.asvitzer.streetswipe.nav.StreetSwipeNavGraph
+import com.asvitzer.streetswipe.ui.screen.PaymentOverviewScreen
+import com.asvitzer.streetswipe.ui.screen.PaymentRequestScreen
 import com.asvitzer.streetswipe.ui.theme.StreetSwipeTheme
 import com.stripe.stripeterminal.external.models.ConnectionTokenException
 import dagger.hilt.android.AndroidEntryPoint
@@ -38,17 +47,11 @@ class MainActivity : ComponentActivity() {
         initialize()
         enableEdgeToEdge()
         setContent {
-            StreetSwipeTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+            StreetSwipeNavGraph()
         }
     }
 
+    //TODO Move to UseCase/ViewModel
     private fun initialize() {
         lifecycleScope.launch {
             try {
@@ -66,18 +69,3 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    StreetSwipeTheme {
-        Greeting("Android")
-    }
-}
