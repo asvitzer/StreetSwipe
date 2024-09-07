@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -45,7 +46,7 @@ android {
         buildConfig = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
     packaging {
         resources {
@@ -78,8 +79,9 @@ dependencies {
 
     //Coroutines
     implementation(libs.kotlinx.coroutines.android)
-    //viewModelScope
+    //lifecycle scopes
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 
     //Stripe
     implementation (libs.stripeterminal)

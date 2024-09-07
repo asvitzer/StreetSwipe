@@ -1,6 +1,8 @@
 package com.asvitzer.streetswipe.di
 
 import com.asvitzer.streetswipe.BuildConfig
+import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
+import com.asvitzer.streetswipe.data.source.PaymentApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -12,7 +14,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModules {
+object DataSourceModule {
     @Singleton
     @Provides
     fun providesHttpClient(): OkHttpClient {
@@ -30,6 +32,25 @@ object NetworkModules {
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
+
+    @Singleton
+    @Provides
+    fun providePaymentApi(retrofit: Retrofit): PaymentApi {
+        return retrofit.create(PaymentApi::class.java)
+    }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object RepositoryModule {
+
+    @Singleton
+    @Provides
+    fun providesPaymentRepo(
+        paymentApi: PaymentApi
+    ): StripePaymentRepo {
+        return StripePaymentRepo(paymentApi)
     }
 }
 
