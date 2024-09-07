@@ -1,14 +1,9 @@
 package com.asvitzer.streetswipe.ui.viewmodel
 
-import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
-import android.widget.Toast
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -17,7 +12,6 @@ import androidx.lifecycle.viewModelScope
 import com.asvitzer.streetswipe.data.CustomConnectionTokenProvider
 import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
 import com.asvitzer.streetswipe.di.IoDispatcher
-import com.mastercard.terminalsdk.internal.e
 import com.stripe.stripeterminal.Terminal
 import com.stripe.stripeterminal.external.callable.Callback
 import com.stripe.stripeterminal.external.callable.Cancelable
@@ -29,7 +23,6 @@ import com.stripe.stripeterminal.external.models.ConnectionTokenException
 import com.stripe.stripeterminal.external.models.DiscoveryConfiguration
 import com.stripe.stripeterminal.external.models.Reader
 import com.stripe.stripeterminal.external.models.TerminalException
-import com.stripe.stripeterminal.log.LogLevel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
@@ -38,13 +31,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    application: Application,
     private val stripePaymentRepo: StripePaymentRepo,
-    private val tokenProvider: CustomConnectionTokenProvider,
+    private val terminal: Terminal,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
-) : AndroidViewModel(application) {
-
-    private val appContext: Context = getApplication<Application>().applicationContext
+) : ViewModel() {
 
     private val _toastMessage = MutableLiveData<String>()
     val toastMessage: LiveData<String> = _toastMessage
@@ -55,21 +45,17 @@ class MainViewModel @Inject constructor(
     private var discoverCancelable: Cancelable? = null
 
     init {
-        initializeTerminal()
+        initialize()
     }
 
-    private fun initializeTerminal() {
-
+    private fun initialize() {
         val listener = object : TerminalListener {
             override fun onUnexpectedReaderDisconnect(reader: Reader) {
                 _toastMessage.postValue("Reader disconnected. Launch app again to reconnect")
             }
         }
 
-        val logLevel = LogLevel.VERBOSE
-        if (!Terminal.isInitialized()) {
-            Terminal.initTerminal(appContext, logLevel, tokenProvider, listener)
-        }
+        terminal.setTerminalListener(listener)
 
         viewModelScope.launch {
             try {
@@ -93,7 +79,7 @@ class MainViewModel @Inject constructor(
         val config =
             DiscoveryConfiguration.LocalMobileDiscoveryConfiguration(isSimulated = isDebuggable)
 
-        discoverCancelable = Terminal.getInstance().discoverReaders(
+        discoverCancelable = terminal.discoverReaders(
             config,
             object : DiscoveryListener {
 
@@ -119,7 +105,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             val config =
                 ConnectionConfiguration.LocalMobileConnectionConfiguration("{{LOCATION_ID}}")
-            Terminal.getInstance().connectLocalMobileReader(reader, config, object :
+            terminal.connectLocalMobileReader(reader, config, object :
                 ReaderCallback {
                 override fun onSuccess(reader: Reader) {
                     _toastMessage.value = "Connected to reader successfully"
@@ -154,7 +140,6 @@ class MainViewModel @Inject constructor(
             override fun onSuccess() {
                 _toastMessage.postValue("Canceled discoverCancelable successfully")
             }
-
         })
     }
 }

@@ -16,7 +16,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo: StripePaymentRepo) : ViewModel() {
+class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo: StripePaymentRepo,
+    private val terminal: Terminal) : ViewModel() {
 
     fun requestPayment(amount: Long) {
 
@@ -24,7 +25,7 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
             .setAmount(amount)
             .setCurrency("usd")
             .build()
-        Terminal.getInstance().createPaymentIntent(
+        terminal.createPaymentIntent(
             params,
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
@@ -44,7 +45,7 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
 
     private fun collectPaymentMethod(paymentIntent: PaymentIntent) {
         //TODO cancel cancelable with viewmodel lifecycle
-        val cancelable = Terminal.getInstance().collectPaymentMethod(
+        val cancelable = terminal.collectPaymentMethod(
             paymentIntent,
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
@@ -71,7 +72,7 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
     }
 
     private fun confirmPaymentIntent(paymentIntent: PaymentIntent) {
-        Terminal.getInstance().confirmPaymentIntent(
+        terminal.confirmPaymentIntent(
             paymentIntent,
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
