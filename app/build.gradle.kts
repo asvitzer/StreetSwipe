@@ -77,10 +77,10 @@ dependencies {
     //DI
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
-
     //Navigation
     implementation(libs.androidx.navigation.compose)
-
+    //DI & Jetpack Navigation
+    implementation (libs.androidx.hilt.navigation.compose)
     //Coroutines
     implementation(libs.kotlinx.coroutines.android)
     //lifecycle scopes

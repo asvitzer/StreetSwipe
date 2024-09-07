@@ -24,6 +24,7 @@ import androidx.navigation.NavGraph
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.asvitzer.streetswipe.data.CustomConnectionTokenProvider
 import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
 import com.asvitzer.streetswipe.di.IoDispatcher
 import com.asvitzer.streetswipe.nav.Overview
@@ -43,6 +44,7 @@ import com.stripe.stripeterminal.external.models.ConnectionTokenException
 import com.stripe.stripeterminal.external.models.DiscoveryConfiguration
 import com.stripe.stripeterminal.external.models.Reader
 import com.stripe.stripeterminal.external.models.TerminalException
+import com.stripe.stripeterminal.log.LogLevel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
@@ -60,9 +62,9 @@ class MainActivity : ComponentActivity() {
     lateinit var ioDispatcher: CoroutineDispatcher
 
     @Inject
-    lateinit var terminal: Terminal
+    lateinit var tokenProvider: CustomConnectionTokenProvider
 
-    var discoverCancelable: Cancelable? = null
+    private var discoverCancelable: Cancelable? = null
 
     companion object {
         private const val REQUEST_CODE_LOCATION = 100
@@ -73,7 +75,9 @@ class MainActivity : ComponentActivity() {
         initialize()
         enableEdgeToEdge()
         setContent {
-            StreetSwipeNavGraph()
+            StreetSwipeTheme {
+                StreetSwipeNavGraph()
+            }
         }
     }
 
@@ -96,7 +100,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            terminal.setTerminalListener(listener)
+            val logLevel = LogLevel.VERBOSE
+            if (!Terminal.isInitialized()) {
+                Terminal.initTerminal(baseContext, logLevel, tokenProvider, listener)
+            }
 
             lifecycleScope.launch {
                 try {
@@ -127,7 +134,7 @@ class MainActivity : ComponentActivity() {
             isSimulated = isApplicationDebuggable,
         )
 
-        discoverCancelable = terminal.discoverReaders(
+        discoverCancelable = Terminal.getInstance().discoverReaders(
             config,
             object : DiscoveryListener {
                 override fun onUpdateDiscoveredReaders(readers: List<Reader>) {
@@ -159,7 +166,7 @@ class MainActivity : ComponentActivity() {
 
     private fun connectToReader(reader: Reader) {
         val config = ConnectionConfiguration.LocalMobileConnectionConfiguration("{{LOCATION_ID}}")
-        terminal.connectLocalMobileReader(
+        Terminal.getInstance().connectLocalMobileReader(
             reader,
             config,
             object : ReaderCallback {
