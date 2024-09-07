@@ -25,7 +25,6 @@ import com.asvitzer.streetswipe.ui.viewmodel.PaymentRequestViewModel
 
 @Composable
 fun PaymentRequestScreen(
-    navController: NavHostController,
     viewModel: PaymentRequestViewModel = hiltViewModel()
 ) {
     PaymentRequestComponent(onSubmitAmount = { amount ->
