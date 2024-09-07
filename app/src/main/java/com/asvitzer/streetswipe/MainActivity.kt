@@ -1,5 +1,10 @@
 package com.asvitzer.streetswipe
 
+import android.Manifest
+import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.annotation.SuppressLint
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -12,6 +17,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavGraph
 import androidx.navigation.compose.NavHost
@@ -25,7 +32,17 @@ import com.asvitzer.streetswipe.nav.StreetSwipeNavGraph
 import com.asvitzer.streetswipe.ui.screen.PaymentOverviewScreen
 import com.asvitzer.streetswipe.ui.screen.PaymentRequestScreen
 import com.asvitzer.streetswipe.ui.theme.StreetSwipeTheme
+import com.stripe.stripeterminal.Terminal
+import com.stripe.stripeterminal.external.callable.Callback
+import com.stripe.stripeterminal.external.callable.Cancelable
+import com.stripe.stripeterminal.external.callable.DiscoveryListener
+import com.stripe.stripeterminal.external.callable.ReaderCallback
+import com.stripe.stripeterminal.external.callable.TerminalListener
+import com.stripe.stripeterminal.external.models.ConnectionConfiguration
 import com.stripe.stripeterminal.external.models.ConnectionTokenException
+import com.stripe.stripeterminal.external.models.DiscoveryConfiguration
+import com.stripe.stripeterminal.external.models.Reader
+import com.stripe.stripeterminal.external.models.TerminalException
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
@@ -42,6 +59,15 @@ class MainActivity : ComponentActivity() {
     @IoDispatcher
     lateinit var ioDispatcher: CoroutineDispatcher
 
+    @Inject
+    lateinit var terminal: Terminal
+
+    var discoverCancelable: Cancelable? = null
+
+    companion object {
+        private const val REQUEST_CODE_LOCATION = 100
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initialize()
@@ -53,19 +79,133 @@ class MainActivity : ComponentActivity() {
 
     //TODO Move to UseCase/ViewModel
     private fun initialize() {
-        lifecycleScope.launch {
-            try {
-                val token = withContext(ioDispatcher) {
-                    stripePaymentRepo.createConnectionToken()
+        if (ContextCompat.checkSelfPermission(
+                this,
+                ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            val permissions = arrayOf(ACCESS_FINE_LOCATION)
+            ActivityCompat.requestPermissions(this, permissions, REQUEST_CODE_LOCATION)
+        } else {
+
+            val listener = object : TerminalListener {
+                override fun onUnexpectedReaderDisconnect(reader: Reader) {
+                    //TODO prompt user if they want app to rediscover readers and auto reconnect to one
+                    Toast.makeText(this@MainActivity, "Reader disconnected. Launch app again to reconnect", Toast.LENGTH_SHORT)
+                        .show()
                 }
+            }
 
-                Toast.makeText(this@MainActivity, "Successful! Token: $token", Toast.LENGTH_SHORT)
-                    .show()
+            terminal.setTerminalListener(listener)
 
-            } catch (exception: ConnectionTokenException) {
-                Toast.makeText(baseContext, "Failed to get token", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                try {
+                    val token = withContext(ioDispatcher) {
+                        stripePaymentRepo.createConnectionToken()
+                    }
+
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Successful! Token: $token",
+                        Toast.LENGTH_SHORT
+                    )
+                        .show()
+
+                    discoverReaders()
+
+                } catch (exception: ConnectionTokenException) {
+                    Toast.makeText(baseContext, "Failed to get token", Toast.LENGTH_SHORT).show()
+                }
             }
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun discoverReaders() {
+        val isApplicationDebuggable = 0 != applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE
+        val config = DiscoveryConfiguration.LocalMobileDiscoveryConfiguration(
+            isSimulated = isApplicationDebuggable,
+        )
+
+        discoverCancelable = terminal.discoverReaders(
+            config,
+            object : DiscoveryListener {
+                override fun onUpdateDiscoveredReaders(readers: List<Reader>) {
+                    connectToReader(readers.first())
+                }
+            },
+            object : Callback {
+                override fun onSuccess() {
+
+                }
+
+                override fun onFailure(e: TerminalException) {
+                    val textToShow = when (e.errorCode) {
+                        TerminalException.TerminalErrorCode.STRIPE_API_CONNECTION_ERROR -> {
+                            "Cannot connect to stable internet. Please try again later."
+                        }
+                        TerminalException.TerminalErrorCode.LOCAL_MOBILE_UNSUPPORTED_ANDROID_VERSION -> {
+                            "Please upgrade OS and try again."
+                        }
+                        else -> {
+                            "Failed to find compatible reader."
+                        }
+                    }
+                    Toast.makeText(baseContext, textToShow, Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+    }
+
+    private fun connectToReader(reader: Reader) {
+        val config = ConnectionConfiguration.LocalMobileConnectionConfiguration("{{LOCATION_ID}}")
+        terminal.connectLocalMobileReader(
+            reader,
+            config,
+            object : ReaderCallback {
+                override fun onSuccess(reader: Reader) {
+                    Toast.makeText(baseContext, "Successfully connected to reader", Toast.LENGTH_SHORT).show()
+                }
+
+                override fun onFailure(e: TerminalException) {
+                    Toast.makeText(baseContext, "Failed to connect to reader", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+    }
+
+    @Deprecated("Convert to using Activity Result") //TODO Convert to using Activity Result
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == REQUEST_CODE_LOCATION && grantResults.isNotEmpty()
+            && grantResults[0] != PackageManager.PERMISSION_GRANTED
+        ) {
+            throw RuntimeException("Location services are required in order to " + "connect to a reader.")
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        // If you're leaving the activity or fragment without selecting a reader,
+        // make sure you cancel the discovery process or the SDK will be stuck in
+        // a discover readers phase
+        discoverCancelable?.cancel(
+            object : Callback {
+                override fun onSuccess() {
+                    // Placeholder for handling successful operation
+                }
+
+                override fun onFailure(e: TerminalException) {
+                    // Placeholder for handling exception
+                }
+            }
+        )
     }
 }
 

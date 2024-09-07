@@ -88,7 +88,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     //Stripe
-    implementation (libs.stripeterminal)
+    implementation (libs.stripeterminal.localmobile)
+    implementation (libs.stripeterminal.core)
 
     // Network
     implementation(libs.okhttp)
