@@ -95,7 +95,11 @@ class MainActivity : ComponentActivity() {
             val listener = object : TerminalListener {
                 override fun onUnexpectedReaderDisconnect(reader: Reader) {
                     //TODO prompt user if they want app to rediscover readers and auto reconnect to one
-                    Toast.makeText(this@MainActivity, "Reader disconnected. Launch app again to reconnect", Toast.LENGTH_SHORT)
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Reader disconnected. Launch app again to reconnect",
+                        Toast.LENGTH_SHORT
+                    )
                         .show()
                 }
             }
@@ -151,9 +155,11 @@ class MainActivity : ComponentActivity() {
                         TerminalException.TerminalErrorCode.STRIPE_API_CONNECTION_ERROR -> {
                             "Cannot connect to stable internet. Please try again later."
                         }
+
                         TerminalException.TerminalErrorCode.LOCAL_MOBILE_UNSUPPORTED_ANDROID_VERSION -> {
                             "Please upgrade OS and try again."
                         }
+
                         else -> {
                             "Failed to find compatible reader."
                         }
@@ -165,20 +171,33 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun connectToReader(reader: Reader) {
-        val config = ConnectionConfiguration.LocalMobileConnectionConfiguration("{{LOCATION_ID}}")
-        Terminal.getInstance().connectLocalMobileReader(
-            reader,
-            config,
-            object : ReaderCallback {
-                override fun onSuccess(reader: Reader) {
-                    Toast.makeText(baseContext, "Successfully connected to reader", Toast.LENGTH_SHORT).show()
-                }
+        lifecycleScope.launch {
+            val config =
+                ConnectionConfiguration.LocalMobileConnectionConfiguration("{{LOCATION_ID}}")
+            //TODO Move Terminal to DI
+            Terminal.getInstance().connectLocalMobileReader(
+                reader,
+                config,
+                object : ReaderCallback {
+                    override fun onSuccess(reader: Reader) {
+                        Toast.makeText(
+                            baseContext,
+                            "Successfully connected to reader",
+                            Toast.LENGTH_SHORT
+                        ).show()
 
-                override fun onFailure(e: TerminalException) {
-                    Toast.makeText(baseContext, "Failed to connect to reader", Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onFailure(e: TerminalException) {
+                        Toast.makeText(
+                            baseContext,
+                            "Failed to connect to reader",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
-            }
-        )
+            )
+        }
     }
 
     @Deprecated("Convert to using Activity Result") //TODO Convert to using Activity Result
