@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -27,9 +28,18 @@ import com.asvitzer.streetswipe.ui.viewmodel.PaymentRequestViewModel
 fun PaymentRequestScreen(
     viewModel: PaymentRequestViewModel = hiltViewModel()
 ) {
-    PaymentRequestComponent(onSubmitAmount = { amount ->
-        viewModel.requestPayment(amount)
-    })
+    val context = LocalContext.current
+    val paymentStatus by viewModel.paymentStatus.collectAsState()
+
+    PaymentRequestComponent(
+        onSubmitAmount = { amount -> viewModel.requestPayment(amount) }
+    )
+
+    LaunchedEffect(paymentStatus) {
+        paymentStatus?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        }
+    }
 }
 
 @Composable

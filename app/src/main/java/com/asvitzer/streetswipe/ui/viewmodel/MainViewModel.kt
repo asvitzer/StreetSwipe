@@ -91,11 +91,11 @@ class MainViewModel @Inject constructor(
             },
             object : Callback {
                 override fun onSuccess() {
-                    _toastMessage.value = "Reader discovered successfully"
+                    _toastMessage.postValue("Reader discovered successfully")
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    _errorMessage.value = handleTerminalError(e)
+                    _errorMessage.postValue(handleTerminalError(e))
                 }
             }
         )
@@ -108,11 +108,11 @@ class MainViewModel @Inject constructor(
             terminal.connectLocalMobileReader(reader, config, object :
                 ReaderCallback {
                 override fun onSuccess(reader: Reader) {
-                    _toastMessage.value = "Connected to reader successfully"
+                    _toastMessage.postValue("Connected to reader successfully")
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    _errorMessage.value = "Failed to connect to reader: ${e.message}"
+                    _errorMessage.postValue("Failed to connect to reader: ${e.message}")
                 }
             })
         }
@@ -134,7 +134,7 @@ class MainViewModel @Inject constructor(
         super.onCleared()
         discoverCancelable?.cancel(callback = object : Callback {
             override fun onFailure(e: TerminalException) {
-                _errorMessage.value = "Could not cancel discoverCancelable: ${e.errorMessage}"
+                _errorMessage.postValue("Could not cancel discoverCancelable: ${e.errorMessage}")
             }
 
             override fun onSuccess() {

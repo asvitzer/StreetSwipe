@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
 import com.mastercard.terminalsdk.internal.e
 import com.stripe.stripeterminal.Terminal
+import com.stripe.stripeterminal.external.callable.Callback
+import com.stripe.stripeterminal.external.callable.Cancelable
 import com.stripe.stripeterminal.external.callable.PaymentIntentCallback
 import com.stripe.stripeterminal.external.models.CollectConfiguration
 import com.stripe.stripeterminal.external.models.PaymentIntent
@@ -12,6 +14,8 @@ import com.stripe.stripeterminal.external.models.PaymentIntentParameters
 import com.stripe.stripeterminal.external.models.TerminalException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,8 +23,12 @@ import javax.inject.Inject
 class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo: StripePaymentRepo,
     private val terminal: Terminal) : ViewModel() {
 
-    fun requestPayment(amount: Long) {
+    private var collectCancelable: Cancelable? = null
 
+    private val _paymentStatus = MutableStateFlow<String?>(null)
+    val paymentStatus: StateFlow<String?> = _paymentStatus
+
+    fun requestPayment(amount: Long) {
         val params = PaymentIntentParameters.Builder()
             .setAmount(amount)
             .setCurrency("usd")
@@ -29,14 +37,15 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
             params,
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
-                    println("PaymentIntent created successfully: $paymentIntent")
-
+                    viewModelScope.launch(Dispatchers.Main) {
+                        _paymentStatus.value = "PaymentIntent created successfully"
+                    }
                     collectPaymentMethod(paymentIntent)
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    viewModelScope.launch {
-                        println("PaymentIntent failed to create successfully: ${e.errorMessage}")
+                    viewModelScope.launch(Dispatchers.Main) {
+                        _paymentStatus.value = "Failed to create PaymentIntent: ${e.errorMessage}"
                     }
                 }
             }
@@ -44,18 +53,20 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
     }
 
     private fun collectPaymentMethod(paymentIntent: PaymentIntent) {
-        //TODO cancel cancelable with viewmodel lifecycle
-        val cancelable = terminal.collectPaymentMethod(
+        collectCancelable = terminal.collectPaymentMethod(
             paymentIntent,
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
-                    println("payment successfully collected: $paymentIntent")
+                    viewModelScope.launch(Dispatchers.Main) {
+                        _paymentStatus.value =  "Payment collected successfully"
+                    }
                     validatePaymentIntent(paymentIntent)
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    // Placeholder for handling exception
-                    println("payment not successfully collected: ${e.errorMessage}")
+                    viewModelScope.launch(Dispatchers.Main) {
+                        _paymentStatus.value = "Failed to collect payment: ${e.errorMessage}"
+                    }
                 }
             }
         )
@@ -76,13 +87,16 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
             paymentIntent,
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
-                    println("payment successfully confirmed: $paymentIntent")
-
+                    viewModelScope.launch(Dispatchers.Main) {
+                        _paymentStatus.value =  "Payment confirmed successfully"
+                    }
                     capturePayment(paymentIntent)
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    println("payment not successfully confirmed: ${e.errorMessage}")
+                    viewModelScope.launch(Dispatchers.Main) {
+                        _paymentStatus.value = "Failed to confirm payment: ${e.errorMessage}"
+                    }
                 }
             }
         )
@@ -94,11 +108,32 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
                val result =  stripePaymentRepo.capturePaymentIntent(id)
 
                 if(result.isSuccess){
-                    println("paymentIntent successfully captured.")
+                    viewModelScope.launch(Dispatchers.Main) {
+                        _paymentStatus.value =  "paymentIntent successfully captured."
+                    }
                 } else {
-                    println("paymentIntent not successfully captured.")
+                    viewModelScope.launch(Dispatchers.Main) {
+                        _paymentStatus.value = "paymentIntent not successfully captured."
+                    }
                 }
             }
-        } ?: println("paymentIntent.id is null. Payment not captured.")
+        } ?: run {
+            viewModelScope.launch(Dispatchers.Main) {
+                _paymentStatus.value = "paymentIntent ID is null, cannot capture payment"
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        collectCancelable?.cancel(object : Callback {
+            override fun onSuccess() {
+                // Handle cancellation success
+            }
+
+            override fun onFailure(e: TerminalException) {
+                // Handle cancellation failure
+            }
+        })
     }
 }
