@@ -60,6 +60,7 @@ private fun PaymentRequestComponent(onSubmitAmount: (Long) -> Unit) {
                 onSubmitAmount(long ?: 0) },
             modifier = Modifier.padding(16.dp)
         ) {
+            Text("Pay")
         }
     }
 }

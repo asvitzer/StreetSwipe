@@ -20,4 +20,9 @@ class StripePaymentRepo @Inject constructor(private val service: PaymentApi): Pa
             throw ConnectionTokenException("Creating connection token failed", e)
         }
     }
+
+    override suspend fun capturePaymentIntent(id: String): Result<Boolean> {
+        val result = service.capturePaymentIntent(id)
+        return Result.success(result.isSuccessful)
+    }
 }

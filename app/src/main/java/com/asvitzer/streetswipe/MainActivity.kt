@@ -38,11 +38,14 @@ import com.stripe.stripeterminal.external.callable.Callback
 import com.stripe.stripeterminal.external.callable.Cancelable
 import com.stripe.stripeterminal.external.callable.DiscoveryListener
 import com.stripe.stripeterminal.external.callable.ReaderCallback
+import com.stripe.stripeterminal.external.callable.ReaderListener
 import com.stripe.stripeterminal.external.callable.TerminalListener
 import com.stripe.stripeterminal.external.models.ConnectionConfiguration
 import com.stripe.stripeterminal.external.models.ConnectionTokenException
 import com.stripe.stripeterminal.external.models.DiscoveryConfiguration
 import com.stripe.stripeterminal.external.models.Reader
+import com.stripe.stripeterminal.external.models.ReaderDisplayMessage
+import com.stripe.stripeterminal.external.models.ReaderInputOptions
 import com.stripe.stripeterminal.external.models.TerminalException
 import com.stripe.stripeterminal.log.LogLevel
 import dagger.hilt.android.AndroidEntryPoint
@@ -52,7 +55,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), ReaderListener {
 
     @Inject
     lateinit var stripePaymentRepo: StripePaymentRepo
@@ -198,6 +201,16 @@ class MainActivity : ComponentActivity() {
                 }
             )
         }
+    }
+
+    override fun onRequestReaderInput(options: ReaderInputOptions) {
+        super.onRequestReaderInput(options)
+        Toast.makeText(baseContext, options.toString(), Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onRequestReaderDisplayMessage(message: ReaderDisplayMessage) {
+        super.onRequestReaderDisplayMessage(message)
+        Toast.makeText(baseContext, message.toString(), Toast.LENGTH_SHORT).show()
     }
 
     @Deprecated("Convert to using Activity Result") //TODO Convert to using Activity Result
