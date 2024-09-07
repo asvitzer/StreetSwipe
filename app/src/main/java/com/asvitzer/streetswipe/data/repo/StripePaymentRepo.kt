@@ -10,7 +10,7 @@ class StripePaymentRepo @Inject constructor(private val service: PaymentApi): Pa
     @Throws(ConnectionTokenException::class)
     override suspend fun createConnectionToken(): String {
         try {
-            val result = service.getConnectionToken().execute()
+            val result = service.getConnectionToken()
             if (result.isSuccessful && result.body() != null) {
                 return result.body()!!.secret
             } else {
