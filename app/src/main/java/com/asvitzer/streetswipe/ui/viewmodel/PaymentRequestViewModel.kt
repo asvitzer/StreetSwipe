@@ -142,4 +142,8 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
             }
         })
     }
+
+    fun clearPaymentStatus() {
+        _paymentStatus.value = null
+    }
 }

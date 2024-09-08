@@ -48,6 +48,7 @@ fun PaymentRequestScreen(
     LaunchedEffect(paymentStatus) {
         paymentStatus?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearPaymentStatus()
         }
     }
 }
