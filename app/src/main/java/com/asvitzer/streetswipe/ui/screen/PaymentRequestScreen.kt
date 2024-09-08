@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -34,13 +36,15 @@ import com.asvitzer.streetswipe.ui.viewmodel.PaymentRequestViewModel
 fun PaymentRequestScreen(
     viewModel: PaymentRequestViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
+
     val paymentStatus by viewModel.paymentStatus.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     PaymentRequestComponent(
-        onSubmitAmount = { amount -> viewModel.requestPayment(amount) }
+        onSubmitAmount = { amount -> viewModel.requestPayment(amount) }, isLoading = isLoading
     )
 
+    val context = LocalContext.current
     LaunchedEffect(paymentStatus) {
         paymentStatus?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -49,7 +53,7 @@ fun PaymentRequestScreen(
 }
 
 @Composable
-private fun PaymentRequestComponent(onSubmitAmount: (Long) -> Unit) {
+private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().background(Color.White),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -57,6 +61,15 @@ private fun PaymentRequestComponent(onSubmitAmount: (Long) -> Unit) {
     ) {
 
         var amount by rememberSaveable { mutableStateOf("") }
+        var isButtonClicked by rememberSaveable { mutableStateOf(false) }
+
+        // Timer to reset the button after a short delay (debounce effect)
+        LaunchedEffect(isButtonClicked) {
+            if (isButtonClicked) {
+                kotlinx.coroutines.delay(500L) // 500ms debounce time
+                isButtonClicked = false
+            }
+        }
 
         Image(
             painter = painterResource(id = R.drawable.send_money),
@@ -77,8 +90,7 @@ private fun PaymentRequestComponent(onSubmitAmount: (Long) -> Unit) {
             modifier = Modifier.padding(16.dp)
         )
 
-        // Determine if the button should be enabled (only enable if there's at least 1 valid number)
-        val isButtonEnabled = amount.isNotEmpty()
+        val isButtonEnabled = amount.isNotEmpty() && !isLoading && !isButtonClicked
 
         Button(
             onClick = {
@@ -90,7 +102,14 @@ private fun PaymentRequestComponent(onSubmitAmount: (Long) -> Unit) {
                 .height(45.dp),
             enabled = isButtonEnabled
         ) {
-            Text("Pay")
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.Black,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Text("Pay") // Default button text
+            }
         }
     }
 }
@@ -98,5 +117,5 @@ private fun PaymentRequestComponent(onSubmitAmount: (Long) -> Unit) {
 @Preview
 @Composable
 fun PaymentRequestScreenPreview() {
-    PaymentRequestComponent { }
+    PaymentRequestComponent(isLoading = false) { }
 }

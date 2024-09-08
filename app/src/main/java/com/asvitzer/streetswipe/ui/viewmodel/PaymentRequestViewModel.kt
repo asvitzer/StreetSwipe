@@ -27,7 +27,11 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
     private val _paymentStatus = MutableStateFlow<String?>(null)
     val paymentStatus: StateFlow<String?> = _paymentStatus
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     fun requestPayment(amount: Long) {
+        _isLoading.value = true
         val params = PaymentIntentParameters.Builder()
             .setAmount(amount)
             .setCurrency("usd")
@@ -45,6 +49,7 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
                 override fun onFailure(e: TerminalException) {
                     viewModelScope.launch(Dispatchers.Main) {
                         _paymentStatus.value = "Failed to create PaymentIntent: ${e.errorMessage}"
+                        _isLoading.value = false
                     }
                 }
             }
@@ -65,6 +70,7 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
                 override fun onFailure(e: TerminalException) {
                     viewModelScope.launch(Dispatchers.Main) {
                         _paymentStatus.value = "Failed to collect payment: ${e.errorMessage}"
+                        _isLoading.value = false
                     }
                 }
             }
@@ -95,6 +101,7 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
                 override fun onFailure(e: TerminalException) {
                     viewModelScope.launch(Dispatchers.Main) {
                         _paymentStatus.value = "Failed to confirm payment: ${e.errorMessage}"
+                        _isLoading.value = false
                     }
                 }
             }
@@ -109,14 +116,17 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
                 withContext(Dispatchers.Main){
                     result.onSuccess {
                         _paymentStatus.value =  "paymentIntent successfully captured."
+                        _isLoading.value = false
                     }.onFailure { exception ->
                         _paymentStatus.value = "paymentIntent not successfully captured: ${exception.message}"
+                        _isLoading.value = false
                     }
                 }
             }
         } ?: run {
             // Handle the case where the paymentIntent ID is null
             _paymentStatus.value = "PaymentIntent ID is null, cannot capture payment"
+            _isLoading.value = false
         }
     }
 
