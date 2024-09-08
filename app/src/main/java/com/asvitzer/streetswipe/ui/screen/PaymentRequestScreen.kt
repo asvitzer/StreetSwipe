@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -61,10 +62,15 @@ fun PaymentRequestScreen(
 @Composable
 private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().background(Color.White).verticalScroll(rememberScrollState()),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .verticalScroll(rememberScrollState())
+            .imePadding(),  // Add this to shift elements up when the keyboard appears,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-    ) {
+
+        ) {
 
         var amount by rememberSaveable { mutableStateOf("") }
         var isButtonClicked by rememberSaveable { mutableStateOf(false) }
@@ -80,10 +86,15 @@ private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -
         Image(
             painter = painterResource(id = R.drawable.send_money),
             contentDescription = "My Icon",
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         )
 
-        Text(text = "Enter the amount in cents (e.g., 100 for $1.00)", modifier = Modifier.padding(16.dp))
+        Text(
+            text = "Enter the amount in cents (e.g., 100 for $1.00)",
+            modifier = Modifier.padding(16.dp)
+        )
 
         TextField(
             value = amount,
@@ -102,7 +113,8 @@ private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -
         Button(
             onClick = {
                 val long = amount.toLongOrNull()
-                onSubmitAmount(long ?: 0) },
+                onSubmitAmount(long ?: 0)
+            },
             modifier = Modifier
                 .padding(start = 72.dp, end = 72.dp, top = 16.dp, bottom = 16.dp)
                 .width(200.dp)
