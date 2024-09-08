@@ -56,7 +56,7 @@ class MainViewModel @Inject constructor(
         _isLoading.value = true
         val listener = object : TerminalListener {
             override fun onUnexpectedReaderDisconnect(reader: Reader) {
-                    postToastMessage("Reader disconnected. Launch app again to reconnect")
+                postToastMessage("Reader disconnected. Launch app again to reconnect")
             }
         }
 
@@ -97,7 +97,7 @@ class MainViewModel @Inject constructor(
             },
             object : Callback {
                 override fun onSuccess() {
-                        postToastMessage("Reader discovered successfully")
+                    postToastMessage("Reader discovered successfully")
                 }
 
                 override fun onFailure(e: TerminalException) {
@@ -115,9 +115,9 @@ class MainViewModel @Inject constructor(
             terminal.connectLocalMobileReader(reader, config, object :
                 ReaderCallback {
                 override fun onSuccess(reader: Reader) {
-                        postToastMessage("Connected to reader successfully")
-                    _isLoading.value = false
+                    postToastMessage("Connected to reader successfully")
                     hasReader = true
+                    _isLoading.value = false
                 }
 
                 override fun onFailure(e: TerminalException) {
@@ -148,7 +148,7 @@ class MainViewModel @Inject constructor(
             }
 
             override fun onSuccess() {
-                    postToastMessage("Canceled discoverCancelable successfully")
+                postToastMessage("Canceled discoverCancelable successfully")
             }
         })
     }
