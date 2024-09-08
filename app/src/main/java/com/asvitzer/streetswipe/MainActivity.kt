@@ -32,8 +32,8 @@ class MainActivity : ComponentActivity(), ReaderListener {
 
         registerPermissionLauncher()
         handlePermissionsAndInitialize()
-
         enableEdgeToEdge()
+
         setContent {
             StreetSwipeTheme {
                 StreetSwipeNavGraph()
