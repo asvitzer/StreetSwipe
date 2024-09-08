@@ -12,8 +12,12 @@ import javax.inject.Qualifier
 import javax.inject.Singleton
 
 @Qualifier
-@Retention(AnnotationRetention.RUNTIME)
+@Retention(AnnotationRetention.BINARY)
 annotation class IoDispatcher
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class MainDispatcher
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -22,6 +26,10 @@ object CoroutinesModule {
     @Provides
     @IoDispatcher
     fun providesIODispatcher(): CoroutineDispatcher = Dispatchers.IO
+
+    @MainDispatcher
+    @Provides
+    fun provideMainDispatcher(): CoroutineDispatcher = Dispatchers.Main
 
     /**
      * Provides a CoroutineScope for use across the application, with a SupervisorJob and Dispatchers.IO.

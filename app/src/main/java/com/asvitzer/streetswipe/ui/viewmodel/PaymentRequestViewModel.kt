@@ -2,10 +2,11 @@ package com.asvitzer.streetswipe.ui.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.asvitzer.streetswipe.R
 import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
+import com.asvitzer.streetswipe.di.IoDispatcher
+import com.asvitzer.streetswipe.di.MainDispatcher
 import com.stripe.stripeterminal.Terminal
 import com.stripe.stripeterminal.external.callable.Callback
 import com.stripe.stripeterminal.external.callable.Cancelable
@@ -13,9 +14,8 @@ import com.stripe.stripeterminal.external.callable.PaymentIntentCallback
 import com.stripe.stripeterminal.external.models.PaymentIntent
 import com.stripe.stripeterminal.external.models.PaymentIntentParameters
 import com.stripe.stripeterminal.external.models.TerminalException
-import dagger.hilt.android.internal.Contexts.getApplication
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -26,6 +26,8 @@ import javax.inject.Inject
 class PaymentRequestViewModel @Inject constructor(
     application: Application,
     private val stripePaymentRepo: StripePaymentRepo,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    @MainDispatcher private val mainDispatcher: CoroutineDispatcher,
     private val terminal: Terminal
 ) : AndroidViewModel(application) {
 
@@ -47,14 +49,14 @@ class PaymentRequestViewModel @Inject constructor(
             params,
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
-                    viewModelScope.launch(Dispatchers.Main) {
+                    viewModelScope.launch(mainDispatcher) {
                         _paymentStatus.value = getApplication<Application>().getString(R.string.payment_intent_created_success)
                     }
                     collectPaymentMethod(paymentIntent)
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    viewModelScope.launch(Dispatchers.Main) {
+                    viewModelScope.launch(mainDispatcher) {
                         _paymentStatus.value = getApplication<Application>().getString(R.string.payment_intent_creation_failed, e.errorMessage)
                         _isLoading.value = false
                     }
@@ -68,14 +70,14 @@ class PaymentRequestViewModel @Inject constructor(
             paymentIntent,
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
-                    viewModelScope.launch(Dispatchers.Main) {
+                    viewModelScope.launch(mainDispatcher) {
                         _paymentStatus.value = getApplication<Application>().getString(R.string.payment_collected_success)
                     }
                     validatePaymentIntent(paymentIntent)
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    viewModelScope.launch(Dispatchers.Main) {
+                    viewModelScope.launch(mainDispatcher) {
                         _paymentStatus.value = getApplication<Application>().getString(R.string.payment_collection_failed, e.errorMessage)
                         _isLoading.value = false
                     }
@@ -89,7 +91,7 @@ class PaymentRequestViewModel @Inject constructor(
         val card = pm?.cardPresentDetails ?: pm?.interacPresentDetails
 
         card?.last4?.let {
-            println("Card last 4: " + it)
+            println("Card last 4: $it")
         }
         confirmPaymentIntent(paymentIntent)
     }
@@ -99,14 +101,14 @@ class PaymentRequestViewModel @Inject constructor(
             paymentIntent,
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
-                    viewModelScope.launch(Dispatchers.Main) {
+                    viewModelScope.launch(mainDispatcher) {
                         _paymentStatus.value = getApplication<Application>().getString(R.string.payment_confirmed_success)
                     }
                     capturePayment(paymentIntent)
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    viewModelScope.launch(Dispatchers.Main) {
+                    viewModelScope.launch(mainDispatcher) {
                         _paymentStatus.value = getApplication<Application>().getString(R.string.payment_confirmation_failed, e.errorMessage)
                         _isLoading.value = false
                     }
@@ -117,10 +119,10 @@ class PaymentRequestViewModel @Inject constructor(
 
     private fun capturePayment(paymentIntent: PaymentIntent) {
         paymentIntent.id?.let { id ->
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(ioDispatcher) {
                 val result = stripePaymentRepo.capturePaymentIntent(id)
 
-                withContext(Dispatchers.Main) {
+                withContext(mainDispatcher) {
                     result.onSuccess {
                         _paymentStatus.value = getApplication<Application>().getString(R.string.payment_capture_success)
                         _isLoading.value = false

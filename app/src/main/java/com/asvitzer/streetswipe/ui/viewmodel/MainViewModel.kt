@@ -34,7 +34,7 @@ class MainViewModel @Inject constructor(
     private val stripePaymentRepo: StripePaymentRepo,
     private val terminal: Terminal,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
-    private val application: Application // Inject Application context to access resources
+    private val application: Application
 ) : ViewModel() {
 
     private val _toastMessage = MutableSharedFlow<String>()
