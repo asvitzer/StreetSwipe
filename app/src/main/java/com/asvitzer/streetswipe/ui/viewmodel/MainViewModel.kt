@@ -49,16 +49,20 @@ class MainViewModel @Inject constructor(
         terminal.setTerminalListener(listener)
 
         viewModelScope.launch {
-            try {
-                val token = withContext(ioDispatcher) {
-                    stripePaymentRepo.createConnectionToken()
-                }
+            // Call the createConnectionToken() and get the Result<String>
+            val result = withContext(ioDispatcher) {
+                stripePaymentRepo.createConnectionToken()
+            }
 
+            // Handle the Result
+            result.onSuccess { token ->
+                // Token creation was successful, post a success message
                 _toastMessage.postValue("Successful! Token: $token")
 
+                // Proceed to discover readers
                 discoverReaders()
-
-            } catch (exception: ConnectionTokenException) {
+            }.onFailure { exception ->
+                // Handle failure, post the error message
                 _errorMessage.postValue("Failed to get connection token: ${exception.message}")
             }
         }

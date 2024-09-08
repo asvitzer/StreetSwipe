@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -103,22 +104,19 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
     private fun capturePayment(paymentIntent: PaymentIntent) {
         paymentIntent.id?.let { id ->
             viewModelScope.launch(Dispatchers.IO) {
-               val result =  stripePaymentRepo.capturePaymentIntent(id)
+                val result = stripePaymentRepo.capturePaymentIntent(id)
 
-                if(result.isSuccess){
-                    viewModelScope.launch(Dispatchers.Main) {
+                withContext(Dispatchers.Main){
+                    result.onSuccess {
                         _paymentStatus.value =  "paymentIntent successfully captured."
-                    }
-                } else {
-                    viewModelScope.launch(Dispatchers.Main) {
-                        _paymentStatus.value = "paymentIntent not successfully captured."
+                    }.onFailure { exception ->
+                        _paymentStatus.value = "paymentIntent not successfully captured: ${exception.message}"
                     }
                 }
             }
         } ?: run {
-            viewModelScope.launch(Dispatchers.Main) {
-                _paymentStatus.value = "paymentIntent ID is null, cannot capture payment"
-            }
+            // Handle the case where the paymentIntent ID is null
+            _paymentStatus.value = "PaymentIntent ID is null, cannot capture payment"
         }
     }
 

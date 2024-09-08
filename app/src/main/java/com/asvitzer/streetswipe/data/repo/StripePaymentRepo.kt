@@ -7,22 +7,30 @@ import javax.inject.Inject
 
 class StripePaymentRepo @Inject constructor(private val service: PaymentApi): PaymentRepo {
 
-    @Throws(ConnectionTokenException::class)
-    override suspend fun createConnectionToken(): String {
-        try {
-            val result = service.getConnectionToken()
-            if (result.isSuccessful && result.body() != null) {
-                return result.body()!!.secret
+    override suspend fun createConnectionToken(): Result<String> {
+        return try {
+            val response = service.getConnectionToken()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.secret)
             } else {
-                throw ConnectionTokenException("Creating connection token failed")
+                Result.failure(ConnectionTokenException("Creating connection token failed"))
             }
         } catch (e: IOException) {
-            throw ConnectionTokenException("Creating connection token failed", e)
+            Result.failure(ConnectionTokenException("Creating connection token failed", e))
         }
     }
 
+    // Refactored to return Result<Boolean>
     override suspend fun capturePaymentIntent(id: String): Result<Boolean> {
-        val result = service.capturePaymentIntent(id)
-        return Result.success(result.isSuccessful)
+        return try {
+            val response = service.capturePaymentIntent(id)
+            if (response.isSuccessful) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Failed to capture payment intent"))
+            }
+        } catch (e: IOException) {
+            Result.failure(e)
+        }
     }
 }
