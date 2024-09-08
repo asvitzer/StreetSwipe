@@ -20,6 +20,8 @@ import com.stripe.stripeterminal.external.models.TerminalException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,6 +40,9 @@ class MainViewModel @Inject constructor(
     private val _errorMessage = MutableSharedFlow<String>()
     val errorMessage = _errorMessage.asSharedFlow()
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     private var discoverCancelable: Cancelable? = null
 
     // Track whether the terminal is initialized with a reader
@@ -47,6 +52,8 @@ class MainViewModel @Inject constructor(
         if (hasReader) {
             return
         }
+
+        _isLoading.value = true
         val listener = object : TerminalListener {
             override fun onUnexpectedReaderDisconnect(reader: Reader) {
                     postToastMessage("Reader disconnected. Launch app again to reconnect")
@@ -68,6 +75,7 @@ class MainViewModel @Inject constructor(
                 discoverReaders()
             }.onFailure { exception ->
                 postErrorMessage("Failed to get connection token: ${exception.message}")
+                _isLoading.value = false
             }
         }
     }
@@ -94,6 +102,7 @@ class MainViewModel @Inject constructor(
 
                 override fun onFailure(e: TerminalException) {
                     postErrorMessage(handleTerminalError(e))
+                    _isLoading.value = false
                 }
             }
         )
@@ -107,11 +116,13 @@ class MainViewModel @Inject constructor(
                 ReaderCallback {
                 override fun onSuccess(reader: Reader) {
                         postToastMessage("Connected to reader successfully")
+                    _isLoading.value = false
                     hasReader = true
                 }
 
                 override fun onFailure(e: TerminalException) {
                     postErrorMessage("Failed to connect to reader: ${e.message}")
+                    _isLoading.value = false
                 }
             })
         }
