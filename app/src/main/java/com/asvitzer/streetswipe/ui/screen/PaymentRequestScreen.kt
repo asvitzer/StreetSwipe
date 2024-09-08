@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -26,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -56,7 +61,7 @@ fun PaymentRequestScreen(
 @Composable
 private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().background(Color.White),
+        modifier = Modifier.fillMaxSize().background(Color.White).verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -88,6 +93,7 @@ private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -
                 amount = filteredValue
             },
             label = { Text("Enter Amount") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.padding(16.dp)
         )
 
@@ -98,9 +104,9 @@ private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -
                 val long = amount.toLongOrNull()
                 onSubmitAmount(long ?: 0) },
             modifier = Modifier
-                .padding(start = 72.dp, end = 72.dp, top = 16.dp)
-                .fillMaxWidth()
-                .height(45.dp),
+                .padding(start = 72.dp, end = 72.dp, top = 16.dp, bottom = 16.dp)
+                .width(200.dp)
+                .height(48.dp),
             enabled = isButtonEnabled
         ) {
             if (isLoading) {
