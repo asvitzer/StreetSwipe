@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -85,14 +86,14 @@ private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -
 
         Image(
             painter = painterResource(id = R.drawable.send_money),
-            contentDescription = "My Icon",
+            contentDescription = stringResource(id = R.string.payment_content_description),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         )
 
         Text(
-            text = "Enter the amount in cents (e.g., 100 for $1.00)",
+            text = stringResource(id = R.string.payment_amount_instructions),
             modifier = Modifier.padding(16.dp)
         )
 
@@ -103,7 +104,7 @@ private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -
                 val filteredValue = newValue.filter { it.isDigit() }
                 amount = filteredValue
             },
-            label = { Text("Enter Amount") },
+            label = { Text(stringResource(id = R.string.payment_hint)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.padding(16.dp)
         )
@@ -127,7 +128,7 @@ private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -
                     modifier = Modifier.size(24.dp)
                 )
             } else {
-                Text("Pay") // Default button text
+                Text(stringResource(id = R.string.payment_button)) // Default button text
             }
         }
     }

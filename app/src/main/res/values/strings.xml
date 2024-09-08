@@ -1,3 +1,34 @@
 <resources>
     <string name="app_name">Street Swipe</string>
+    <string name="generic_ok">OK</string>
+    <string name="generic_cancel">Cancel</string>
+    <string name="payment_amount_instructions">Enter the amount in cents (e.g., 100 for $1.00)</string>
+    <string name="payment_hint">Enter Amount</string>
+    <string name="payment_button">Pay</string>
+    <string name="payment_content_description">Image of money sent electronically</string>
+    <string name="failed_reader_connection">Failed to connect to reader</string>
+    <string name="retry_button">Retry</string>
+    <string name="location_permission_required">Location permission required</string>
+    <string name="location_permission_reader_explanation">This app needs access to your location in order to connect to nearby Stripe card readers.</string>
+    <string name="location_permission_permission_denied">Location services are required to connect to a reader. Please enable in app settings and restart app</string>
+    <string name="payment_intent_created_success">PaymentIntent created successfully</string>
+    <string name="payment_intent_creation_failed">Failed to create PaymentIntent: %1$s</string>
+    <string name="payment_collected_success">Payment collected successfully</string>
+    <string name="payment_collection_failed">Failed to collect payment: %1$s</string>
+    <string name="payment_confirmed_success">Payment confirmed successfully</string>
+    <string name="payment_confirmation_failed">Failed to confirm payment: %1$s</string>
+    <string name="payment_capture_success">PaymentIntent successfully captured</string>
+    <string name="payment_capture_failed">PaymentIntent not successfully captured: %1$s</string>
+    <string name="payment_intent_id_null">PaymentIntent ID is null, cannot capture payment</string>
+    <string name="reader_disconnected">Reader disconnected. Launch app again to reconnect</string>
+    <string name="connection_token_success">Successful! Token: %1$s</string>
+    <string name="connection_token_failed">Failed to get connection token: %1$s</string>
+    <string name="reader_discovered">Reader discovered successfully</string>
+    <string name="reader_discovery_failed">Failed to find compatible reader</string>
+    <string name="reader_connected_success">Connected to reader successfully</string>
+    <string name="reader_connection_failed">Failed to connect to reader: %1$s</string>
+    <string name="internet_connection_failed">Cannot connect to the internet. Please try again later.</string>
+    <string name="upgrade_os">Please upgrade OS and try again.</string>
+    <string name="cancel_discovery_failed">Could not cancel discoverCancelable: %1$s</string>
+    <string name="cancel_discovery_success">Canceled discoverCancelable successfully</string>
 </resources>

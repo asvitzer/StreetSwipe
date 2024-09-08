@@ -10,9 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.asvitzer.streetswipe.R
+import com.asvitzer.streetswipe.nav.Loading
 import com.asvitzer.streetswipe.nav.Retry
 import com.asvitzer.streetswipe.ui.viewmodel.MainViewModel
 
@@ -24,15 +27,15 @@ fun RetryScreen(navController: NavHostController,
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Failed to connect to reader")
+        Text(stringResource(id = R.string.failed_reader_connection))
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = {
             viewModel.initialize()
-            navController.navigate("loading") {
+            navController.navigate(Loading.route) {
                 popUpTo(Retry.route) { inclusive = true }
             }
         }) {
-            Text("Retry")
+            Text(stringResource(id = R.string.retry_button))
         }
     }
 }
