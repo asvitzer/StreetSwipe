@@ -25,8 +25,6 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity(), ReaderListener {
 
     private val viewModel: MainViewModel by viewModels()
-
-    // Declare an ActivityResultLauncher for requesting location permission
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
