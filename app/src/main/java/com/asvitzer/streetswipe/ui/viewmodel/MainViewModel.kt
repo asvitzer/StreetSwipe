@@ -14,7 +14,6 @@ import com.stripe.stripeterminal.external.callable.DiscoveryListener
 import com.stripe.stripeterminal.external.callable.ReaderCallback
 import com.stripe.stripeterminal.external.callable.TerminalListener
 import com.stripe.stripeterminal.external.models.ConnectionConfiguration
-import com.stripe.stripeterminal.external.models.ConnectionTokenException
 import com.stripe.stripeterminal.external.models.DiscoveryConfiguration
 import com.stripe.stripeterminal.external.models.Reader
 import com.stripe.stripeterminal.external.models.TerminalException
@@ -39,7 +38,13 @@ class MainViewModel @Inject constructor(
 
     private var discoverCancelable: Cancelable? = null
 
+    // Track whether the terminal is initialized with a reader
+    var hasReader = false
+
     fun initialize() {
+        if (hasReader) {
+            return
+        }
         val listener = object : TerminalListener {
             override fun onUnexpectedReaderDisconnect(reader: Reader) {
                 _toastMessage.postValue("Reader disconnected. Launch app again to reconnect")
@@ -103,6 +108,7 @@ class MainViewModel @Inject constructor(
                 ReaderCallback {
                 override fun onSuccess(reader: Reader) {
                     _toastMessage.postValue("Connected to reader successfully")
+                    hasReader = true
                 }
 
                 override fun onFailure(e: TerminalException) {

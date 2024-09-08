@@ -88,6 +88,7 @@ private fun PaymentRequestComponent(onSubmitAmount: (Long) -> Unit) {
                 .padding(start = 72.dp, end = 72.dp, top = 16.dp)
                 .fillMaxWidth()
                 .height(45.dp),
+            enabled = isButtonEnabled
         ) {
             Text("Pay")
         }
