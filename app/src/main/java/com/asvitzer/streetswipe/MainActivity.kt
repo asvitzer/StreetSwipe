@@ -13,6 +13,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.asvitzer.streetswipe.nav.StreetSwipeNavGraph
 import com.asvitzer.streetswipe.ui.theme.StreetSwipeTheme
 import com.asvitzer.streetswipe.ui.viewmodel.MainViewModel
@@ -20,6 +23,7 @@ import com.stripe.stripeterminal.external.callable.ReaderListener
 import com.stripe.stripeterminal.external.models.ReaderDisplayMessage
 import com.stripe.stripeterminal.external.models.ReaderInputOptions
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity(), ReaderListener {
@@ -97,12 +101,20 @@ class MainActivity : ComponentActivity(), ReaderListener {
     }
 
     private fun observeViewModel() {
-        viewModel.toastMessage.observe(this) { message ->
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.toastMessage.collect { message ->
+                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
-        viewModel.errorMessage.observe(this) { error ->
-            Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.errorMessage.collect { error ->
+                    Toast.makeText(this@MainActivity, error, Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 

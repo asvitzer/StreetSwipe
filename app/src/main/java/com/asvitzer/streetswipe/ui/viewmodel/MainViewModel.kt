@@ -19,6 +19,8 @@ import com.stripe.stripeterminal.external.models.Reader
 import com.stripe.stripeterminal.external.models.TerminalException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -30,11 +32,11 @@ class MainViewModel @Inject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
-    private val _toastMessage = MutableLiveData<String>()
-    val toastMessage: LiveData<String> = _toastMessage
+    private val _toastMessage = MutableSharedFlow<String>()
+    val toastMessage = _toastMessage.asSharedFlow()
 
-    private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
+    private val _errorMessage = MutableSharedFlow<String>()
+    val errorMessage = _errorMessage.asSharedFlow()
 
     private var discoverCancelable: Cancelable? = null
 
@@ -47,7 +49,7 @@ class MainViewModel @Inject constructor(
         }
         val listener = object : TerminalListener {
             override fun onUnexpectedReaderDisconnect(reader: Reader) {
-                _toastMessage.postValue("Reader disconnected. Launch app again to reconnect")
+                    postToastMessage("Reader disconnected. Launch app again to reconnect")
             }
         }
 
@@ -59,16 +61,13 @@ class MainViewModel @Inject constructor(
                 stripePaymentRepo.createConnectionToken()
             }
 
-            // Handle the Result
             result.onSuccess { token ->
-                // Token creation was successful, post a success message
-                _toastMessage.postValue("Successful! Token: $token")
+                postToastMessage("Successful! Token: $token")
 
                 // Proceed to discover readers
                 discoverReaders()
             }.onFailure { exception ->
-                // Handle failure, post the error message
-                _errorMessage.postValue("Failed to get connection token: ${exception.message}")
+                postErrorMessage("Failed to get connection token: ${exception.message}")
             }
         }
     }
@@ -90,11 +89,11 @@ class MainViewModel @Inject constructor(
             },
             object : Callback {
                 override fun onSuccess() {
-                    _toastMessage.postValue("Reader discovered successfully")
+                        postToastMessage("Reader discovered successfully")
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    _errorMessage.postValue(handleTerminalError(e))
+                    postErrorMessage(handleTerminalError(e))
                 }
             }
         )
@@ -107,12 +106,12 @@ class MainViewModel @Inject constructor(
             terminal.connectLocalMobileReader(reader, config, object :
                 ReaderCallback {
                 override fun onSuccess(reader: Reader) {
-                    _toastMessage.postValue("Connected to reader successfully")
+                        postToastMessage("Connected to reader successfully")
                     hasReader = true
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    _errorMessage.postValue("Failed to connect to reader: ${e.message}")
+                    postErrorMessage("Failed to connect to reader: ${e.message}")
                 }
             })
         }
@@ -134,12 +133,26 @@ class MainViewModel @Inject constructor(
         super.onCleared()
         discoverCancelable?.cancel(callback = object : Callback {
             override fun onFailure(e: TerminalException) {
-                _errorMessage.postValue("Could not cancel discoverCancelable: ${e.errorMessage}")
+                postErrorMessage("Could not cancel discoverCancelable: ${e.errorMessage}")
             }
 
             override fun onSuccess() {
-                _toastMessage.postValue("Canceled discoverCancelable successfully")
+                    postToastMessage("Canceled discoverCancelable successfully")
             }
         })
+    }
+
+    // Helper method to emit toast messages
+    private fun postToastMessage(message: String) {
+        viewModelScope.launch {
+            _toastMessage.emit(message)
+        }
+    }
+
+    // Helper method to emit error messages
+    private fun postErrorMessage(error: String) {
+        viewModelScope.launch {
+            _errorMessage.emit(error)
+        }
     }
 }
