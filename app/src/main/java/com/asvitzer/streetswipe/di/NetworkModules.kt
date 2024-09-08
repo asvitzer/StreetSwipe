@@ -1,14 +1,12 @@
 package com.asvitzer.streetswipe.di
 
 import com.asvitzer.streetswipe.BuildConfig
-import com.asvitzer.streetswipe.data.CustomConnectionTokenProvider
 import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
 import com.asvitzer.streetswipe.data.source.PaymentApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

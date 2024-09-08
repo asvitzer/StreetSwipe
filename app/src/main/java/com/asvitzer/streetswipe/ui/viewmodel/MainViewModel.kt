@@ -1,15 +1,10 @@
 package com.asvitzer.streetswipe.ui.viewmodel
 
 import android.annotation.SuppressLint
-import android.app.Application
-import android.content.Context
-import android.content.pm.ApplicationInfo
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.asvitzer.streetswipe.data.CustomConnectionTokenProvider
 import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
 import com.asvitzer.streetswipe.di.IoDispatcher
 import com.stripe.stripeterminal.Terminal
@@ -44,11 +39,7 @@ class MainViewModel @Inject constructor(
 
     private var discoverCancelable: Cancelable? = null
 
-    init {
-        initialize()
-    }
-
-    private fun initialize() {
+    fun initialize() {
         val listener = object : TerminalListener {
             override fun onUnexpectedReaderDisconnect(reader: Reader) {
                 _toastMessage.postValue("Reader disconnected. Launch app again to reconnect")
@@ -75,9 +66,8 @@ class MainViewModel @Inject constructor(
 
     @SuppressLint("MissingPermission")
     private fun discoverReaders() {
-        val isDebuggable = 0 != (ApplicationInfo.FLAG_DEBUGGABLE)
         val config =
-            DiscoveryConfiguration.LocalMobileDiscoveryConfiguration(isSimulated = isDebuggable)
+            DiscoveryConfiguration.LocalMobileDiscoveryConfiguration(isSimulated = true)
 
         discoverCancelable = terminal.discoverReaders(
             config,

@@ -21,7 +21,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import com.asvitzer.streetswipe.ui.viewmodel.PaymentRequestViewModel
 
 @Composable
@@ -77,5 +76,5 @@ private fun PaymentRequestComponent(onSubmitAmount: (Long) -> Unit) {
 @Preview
 @Composable
 fun PaymentRequestScreenPreview() {
-    PaymentRequestComponent({ })
+    PaymentRequestComponent { }
 }

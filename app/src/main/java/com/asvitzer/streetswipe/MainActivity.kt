@@ -1,12 +1,15 @@
 package com.asvitzer.streetswipe
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -23,14 +26,14 @@ class MainActivity : ComponentActivity(), ReaderListener {
 
     private val viewModel: MainViewModel by viewModels()
 
-    companion object {
-        private const val REQUEST_CODE_LOCATION = 100
-    }
+    // Declare an ActivityResultLauncher for requesting location permission
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        checkPermissions()
+        registerPermissionLauncher()
+        handlePermissionsAndInitialize()
 
         enableEdgeToEdge()
         setContent {
@@ -40,6 +43,60 @@ class MainActivity : ComponentActivity(), ReaderListener {
         }
 
         observeViewModel()
+    }
+
+    private fun registerPermissionLauncher() {
+        requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                // Permission granted, proceed with initializing the terminal
+                viewModel.initialize()
+            } else {
+                // Permission denied, show an error message and possibly exit
+                showPermissionDeniedMessage()
+            }
+        }
+    }
+
+    private fun handlePermissionsAndInitialize() {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                // Permission is already granted, proceed with terminal initialization
+                viewModel.initialize()
+            }
+
+            ActivityCompat.shouldShowRequestPermissionRationale(
+                this,
+                ACCESS_FINE_LOCATION
+            ) -> {
+                // Show rationale dialog to explain why the app needs the permission
+                showPermissionRationaleDialog()
+            }
+
+            else -> {
+                // Directly request permission if it hasn't been requested before
+                requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+            }
+        }
+    }
+
+    private fun showPermissionRationaleDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Location Permission Required")
+            .setMessage("This app needs access to your location in order to connect to nearby Stripe card readers.")
+            .setPositiveButton("OK") { _, _ ->
+                // Request permission after showing rationale
+                requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+                showPermissionDeniedMessage()
+            }
+            .show()
     }
 
     private fun observeViewModel() {
@@ -52,15 +109,9 @@ class MainActivity : ComponentActivity(), ReaderListener {
         }
     }
 
-    private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            val permissions = arrayOf(ACCESS_FINE_LOCATION)
-            ActivityCompat.requestPermissions(this, permissions, REQUEST_CODE_LOCATION)
-        }
+    private fun showPermissionDeniedMessage() {
+        Toast.makeText(this, "Location services are required to connect to a reader. Please enable in app settings and restart app", Toast.LENGTH_LONG).show()
+        finish()
     }
 
     override fun onRequestReaderInput(options: ReaderInputOptions) {
@@ -71,21 +122,6 @@ class MainActivity : ComponentActivity(), ReaderListener {
     override fun onRequestReaderDisplayMessage(message: ReaderDisplayMessage) {
         super.onRequestReaderDisplayMessage(message)
         Toast.makeText(baseContext, message.toString(), Toast.LENGTH_SHORT).show()
-    }
-
-    @Deprecated("Convert to using Activity Result") //TODO Convert to using Activity Result
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (requestCode == REQUEST_CODE_LOCATION && grantResults.isNotEmpty()
-            && grantResults[0] != PackageManager.PERMISSION_GRANTED
-        ) {
-            throw RuntimeException("Location services are required in order to connect to a reader.")
-        }
     }
 }
 
