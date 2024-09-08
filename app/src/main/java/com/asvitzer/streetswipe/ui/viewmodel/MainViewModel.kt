@@ -1,9 +1,9 @@
 package com.asvitzer.streetswipe.ui.viewmodel
 
-import android.annotation.SuppressLint
+import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.app.Application
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.asvitzer.streetswipe.R
@@ -74,41 +74,64 @@ class MainViewModel @Inject constructor(
                 postToastMessage(application.getString(R.string.connection_token_success, token))
                 discoverReaders()
             }.onFailure { exception ->
-                postErrorMessage(application.getString(R.string.connection_token_failed, exception.message))
+                postErrorMessage(
+                    application.getString(
+                        R.string.connection_token_failed,
+                        exception.message
+                    )
+                )
                 _isLoading.value = false
             }
         }
     }
 
-    @SuppressLint("MissingPermission")
     private fun discoverReaders() {
-        val config = DiscoveryConfiguration.LocalMobileDiscoveryConfiguration(isSimulated = true)
-
-        discoverCancelable = terminal.discoverReaders(
-            config,
-            object : DiscoveryListener {
-                override fun onUpdateDiscoveredReaders(readers: List<Reader>) {
-                    if (readers.isNotEmpty()) {
-                        connectToReader(readers.first())
-                    }
-                }
-            },
-            object : Callback {
-                override fun onSuccess() {
-                    postToastMessage(application.getString(R.string.reader_discovered))
-                }
-
-                override fun onFailure(e: TerminalException) {
-                    postErrorMessage(handleTerminalError(e))
-                    _isLoading.value = false
-                }
-            }
+        val permissionCheck = ContextCompat.checkSelfPermission(
+            application,
+            ACCESS_FINE_LOCATION
         )
+
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            try {
+                val config =
+                    DiscoveryConfiguration.LocalMobileDiscoveryConfiguration(isSimulated = true)
+
+                discoverCancelable = terminal.discoverReaders(
+                    config,
+                    object : DiscoveryListener {
+                        override fun onUpdateDiscoveredReaders(readers: List<Reader>) {
+                            if (readers.isNotEmpty()) {
+                                connectToReader(readers.first())
+                            }
+                        }
+                    },
+                    object : Callback {
+                        override fun onSuccess() {
+                            postToastMessage(application.getString(R.string.reader_discovered))
+                        }
+
+                        override fun onFailure(e: TerminalException) {
+                            postErrorMessage(handleTerminalError(e))
+                            _isLoading.value = false
+                        }
+                    }
+                )
+            } catch (e: SecurityException) {
+                // Handle security exception in case the permission is revoked while the app is running
+                postErrorMessage(application.getString(R.string.location_permission_permission_denied))
+                _isLoading.value = false
+            }
+        } else {
+            // Handle the case where the permission is not granted
+            postErrorMessage(application.getString(R.string.location_permission_permission_denied))
+            _isLoading.value = false
+        }
     }
 
     private fun connectToReader(reader: Reader) {
         viewModelScope.launch {
-            val config = ConnectionConfiguration.LocalMobileConnectionConfiguration("{{LOCATION_ID}}")
+            val config =
+                ConnectionConfiguration.LocalMobileConnectionConfiguration("{{LOCATION_ID}}")
             terminal.connectLocalMobileReader(reader, config, object : ReaderCallback {
                 override fun onSuccess(reader: Reader) {
                     postToastMessage(application.getString(R.string.reader_connected_success))
@@ -117,7 +140,12 @@ class MainViewModel @Inject constructor(
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    postErrorMessage(application.getString(R.string.reader_connection_failed, e.message))
+                    postErrorMessage(
+                        application.getString(
+                            R.string.reader_connection_failed,
+                            e.message
+                        )
+                    )
                     _isLoading.value = false
                 }
             })
@@ -128,8 +156,10 @@ class MainViewModel @Inject constructor(
         return when (e.errorCode) {
             TerminalException.TerminalErrorCode.STRIPE_API_CONNECTION_ERROR ->
                 application.getString(R.string.internet_connection_failed)
+
             TerminalException.TerminalErrorCode.LOCAL_MOBILE_UNSUPPORTED_ANDROID_VERSION ->
                 application.getString(R.string.upgrade_os)
+
             else -> application.getString(R.string.reader_discovery_failed)
         }
     }
@@ -138,7 +168,12 @@ class MainViewModel @Inject constructor(
         super.onCleared()
         discoverCancelable?.cancel(object : Callback {
             override fun onFailure(e: TerminalException) {
-                postErrorMessage(application.getString(R.string.cancel_discovery_failed, e.errorMessage))
+                postErrorMessage(
+                    application.getString(
+                        R.string.cancel_discovery_failed,
+                        e.errorMessage
+                    )
+                )
             }
 
             override fun onSuccess() {
