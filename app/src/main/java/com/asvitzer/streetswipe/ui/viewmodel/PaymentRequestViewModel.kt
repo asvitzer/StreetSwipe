@@ -1,7 +1,10 @@
 package com.asvitzer.streetswipe.ui.viewmodel
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.asvitzer.streetswipe.R
 import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
 import com.stripe.stripeterminal.Terminal
 import com.stripe.stripeterminal.external.callable.Callback
@@ -10,6 +13,7 @@ import com.stripe.stripeterminal.external.callable.PaymentIntentCallback
 import com.stripe.stripeterminal.external.models.PaymentIntent
 import com.stripe.stripeterminal.external.models.PaymentIntentParameters
 import com.stripe.stripeterminal.external.models.TerminalException
+import dagger.hilt.android.internal.Contexts.getApplication
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,8 +23,11 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
-class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo: StripePaymentRepo,
-    private val terminal: Terminal) : ViewModel() {
+class PaymentRequestViewModel @Inject constructor(
+    application: Application,
+    private val stripePaymentRepo: StripePaymentRepo,
+    private val terminal: Terminal
+) : AndroidViewModel(application) {
 
     private var collectCancelable: Cancelable? = null
 
@@ -41,14 +48,14 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
                     viewModelScope.launch(Dispatchers.Main) {
-                        _paymentStatus.value = "PaymentIntent created successfully"
+                        _paymentStatus.value = getApplication<Application>().getString(R.string.payment_intent_created_success)
                     }
                     collectPaymentMethod(paymentIntent)
                 }
 
                 override fun onFailure(e: TerminalException) {
                     viewModelScope.launch(Dispatchers.Main) {
-                        _paymentStatus.value = "Failed to create PaymentIntent: ${e.errorMessage}"
+                        _paymentStatus.value = getApplication<Application>().getString(R.string.payment_intent_creation_failed, e.errorMessage)
                         _isLoading.value = false
                     }
                 }
@@ -62,14 +69,14 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
                     viewModelScope.launch(Dispatchers.Main) {
-                        _paymentStatus.value =  "Payment collected successfully"
+                        _paymentStatus.value = getApplication<Application>().getString(R.string.payment_collected_success)
                     }
                     validatePaymentIntent(paymentIntent)
                 }
 
                 override fun onFailure(e: TerminalException) {
                     viewModelScope.launch(Dispatchers.Main) {
-                        _paymentStatus.value = "Failed to collect payment: ${e.errorMessage}"
+                        _paymentStatus.value = getApplication<Application>().getString(R.string.payment_collection_failed, e.errorMessage)
                         _isLoading.value = false
                     }
                 }
@@ -81,8 +88,8 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
         val pm = paymentIntent.paymentMethod
         val card = pm?.cardPresentDetails ?: pm?.interacPresentDetails
 
-        card?.last4?.let{
-            println("Card last 4: " + card.last4)
+        card?.last4?.let {
+            println("Card last 4: " + it)
         }
         confirmPaymentIntent(paymentIntent)
     }
@@ -93,14 +100,14 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
             object : PaymentIntentCallback {
                 override fun onSuccess(paymentIntent: PaymentIntent) {
                     viewModelScope.launch(Dispatchers.Main) {
-                        _paymentStatus.value =  "Payment confirmed successfully"
+                        _paymentStatus.value = getApplication<Application>().getString(R.string.payment_confirmed_success)
                     }
                     capturePayment(paymentIntent)
                 }
 
                 override fun onFailure(e: TerminalException) {
                     viewModelScope.launch(Dispatchers.Main) {
-                        _paymentStatus.value = "Failed to confirm payment: ${e.errorMessage}"
+                        _paymentStatus.value = getApplication<Application>().getString(R.string.payment_confirmation_failed, e.errorMessage)
                         _isLoading.value = false
                     }
                 }
@@ -113,19 +120,18 @@ class PaymentRequestViewModel @Inject constructor(private val stripePaymentRepo:
             viewModelScope.launch(Dispatchers.IO) {
                 val result = stripePaymentRepo.capturePaymentIntent(id)
 
-                withContext(Dispatchers.Main){
+                withContext(Dispatchers.Main) {
                     result.onSuccess {
-                        _paymentStatus.value =  "paymentIntent successfully captured."
+                        _paymentStatus.value = getApplication<Application>().getString(R.string.payment_capture_success)
                         _isLoading.value = false
                     }.onFailure { exception ->
-                        _paymentStatus.value = "paymentIntent not successfully captured: ${exception.message}"
+                        _paymentStatus.value = getApplication<Application>().getString(R.string.payment_capture_failed, exception.message)
                         _isLoading.value = false
                     }
                 }
             }
         } ?: run {
-            // Handle the case where the paymentIntent ID is null
-            _paymentStatus.value = "PaymentIntent ID is null, cannot capture payment"
+            _paymentStatus.value = getApplication<Application>().getString(R.string.payment_intent_id_null)
             _isLoading.value = false
         }
     }

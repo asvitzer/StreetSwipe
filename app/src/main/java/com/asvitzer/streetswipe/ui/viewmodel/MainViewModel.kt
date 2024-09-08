@@ -1,10 +1,12 @@
 package com.asvitzer.streetswipe.ui.viewmodel
 
 import android.annotation.SuppressLint
+import android.app.Application
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.asvitzer.streetswipe.R
 import com.asvitzer.streetswipe.data.repo.StripePaymentRepo
 import com.asvitzer.streetswipe.di.IoDispatcher
 import com.stripe.stripeterminal.Terminal
@@ -31,7 +33,8 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val stripePaymentRepo: StripePaymentRepo,
     private val terminal: Terminal,
-    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val application: Application // Inject Application context to access resources
 ) : ViewModel() {
 
     private val _toastMessage = MutableSharedFlow<String>()
@@ -56,25 +59,22 @@ class MainViewModel @Inject constructor(
         _isLoading.value = true
         val listener = object : TerminalListener {
             override fun onUnexpectedReaderDisconnect(reader: Reader) {
-                postToastMessage("Reader disconnected. Launch app again to reconnect")
+                postToastMessage(application.getString(R.string.reader_disconnected))
             }
         }
 
         terminal.setTerminalListener(listener)
 
         viewModelScope.launch {
-            // Call the createConnectionToken() and get the Result<String>
             val result = withContext(ioDispatcher) {
                 stripePaymentRepo.createConnectionToken()
             }
 
             result.onSuccess { token ->
-                postToastMessage("Successful! Token: $token")
-
-                // Proceed to discover readers
+                postToastMessage(application.getString(R.string.connection_token_success, token))
                 discoverReaders()
             }.onFailure { exception ->
-                postErrorMessage("Failed to get connection token: ${exception.message}")
+                postErrorMessage(application.getString(R.string.connection_token_failed, exception.message))
                 _isLoading.value = false
             }
         }
@@ -82,13 +82,11 @@ class MainViewModel @Inject constructor(
 
     @SuppressLint("MissingPermission")
     private fun discoverReaders() {
-        val config =
-            DiscoveryConfiguration.LocalMobileDiscoveryConfiguration(isSimulated = true)
+        val config = DiscoveryConfiguration.LocalMobileDiscoveryConfiguration(isSimulated = true)
 
         discoverCancelable = terminal.discoverReaders(
             config,
             object : DiscoveryListener {
-
                 override fun onUpdateDiscoveredReaders(readers: List<Reader>) {
                     if (readers.isNotEmpty()) {
                         connectToReader(readers.first())
@@ -97,7 +95,7 @@ class MainViewModel @Inject constructor(
             },
             object : Callback {
                 override fun onSuccess() {
-                    postToastMessage("Reader discovered successfully")
+                    postToastMessage(application.getString(R.string.reader_discovered))
                 }
 
                 override fun onFailure(e: TerminalException) {
@@ -110,18 +108,16 @@ class MainViewModel @Inject constructor(
 
     private fun connectToReader(reader: Reader) {
         viewModelScope.launch {
-            val config =
-                ConnectionConfiguration.LocalMobileConnectionConfiguration("{{LOCATION_ID}}")
-            terminal.connectLocalMobileReader(reader, config, object :
-                ReaderCallback {
+            val config = ConnectionConfiguration.LocalMobileConnectionConfiguration("{{LOCATION_ID}}")
+            terminal.connectLocalMobileReader(reader, config, object : ReaderCallback {
                 override fun onSuccess(reader: Reader) {
-                    postToastMessage("Connected to reader successfully")
+                    postToastMessage(application.getString(R.string.reader_connected_success))
                     hasReader = true
                     _isLoading.value = false
                 }
 
                 override fun onFailure(e: TerminalException) {
-                    postErrorMessage("Failed to connect to reader: ${e.message}")
+                    postErrorMessage(application.getString(R.string.reader_connection_failed, e.message))
                     _isLoading.value = false
                 }
             })
@@ -131,24 +127,22 @@ class MainViewModel @Inject constructor(
     private fun handleTerminalError(e: TerminalException): String {
         return when (e.errorCode) {
             TerminalException.TerminalErrorCode.STRIPE_API_CONNECTION_ERROR ->
-                "Cannot connect to the internet. Please try again later."
-
+                application.getString(R.string.internet_connection_failed)
             TerminalException.TerminalErrorCode.LOCAL_MOBILE_UNSUPPORTED_ANDROID_VERSION ->
-                "Please upgrade OS and try again."
-
-            else -> "Failed to find compatible reader."
+                application.getString(R.string.upgrade_os)
+            else -> application.getString(R.string.reader_discovery_failed)
         }
     }
 
     override fun onCleared() {
         super.onCleared()
-        discoverCancelable?.cancel(callback = object : Callback {
+        discoverCancelable?.cancel(object : Callback {
             override fun onFailure(e: TerminalException) {
-                postErrorMessage("Could not cancel discoverCancelable: ${e.errorMessage}")
+                postErrorMessage(application.getString(R.string.cancel_discovery_failed, e.errorMessage))
             }
 
             override fun onSuccess() {
-                postToastMessage("Canceled discoverCancelable successfully")
+                postToastMessage(application.getString(R.string.cancel_discovery_success))
             }
         })
     }

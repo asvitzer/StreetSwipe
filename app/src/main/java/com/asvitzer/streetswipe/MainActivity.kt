@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -87,13 +86,13 @@ class MainActivity : ComponentActivity(), ReaderListener {
 
     private fun showPermissionRationaleDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Location Permission Required")
-            .setMessage("This app needs access to your location in order to connect to nearby Stripe card readers.")
-            .setPositiveButton("OK") { _, _ ->
+            .setTitle(getString(R.string.location_permission_required))
+            .setMessage(getString(R.string.location_permission_reader_explanation))
+            .setPositiveButton(getString(R.string.generic_ok)) { _, _ ->
                 // Request permission after showing rationale
                 requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
             }
-            .setNegativeButton("Cancel") { dialog, _ ->
+            .setNegativeButton(getString(R.string.generic_cancel)) { dialog, _ ->
                 dialog.dismiss()
                 showPermissionDeniedMessage()
             }
@@ -119,7 +118,7 @@ class MainActivity : ComponentActivity(), ReaderListener {
     }
 
     private fun showPermissionDeniedMessage() {
-        Toast.makeText(this, "Location services are required to connect to a reader. Please enable in app settings and restart app", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, getString(R.string.location_permission_permission_denied), Toast.LENGTH_LONG).show()
         finish()
     }
 
