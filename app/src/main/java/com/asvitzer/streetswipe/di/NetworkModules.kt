@@ -6,6 +6,7 @@ import com.asvitzer.streetswipe.data.source.PaymentApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -42,10 +43,9 @@ object DataSourceModule {
 }
 
 @Module
-@InstallIn(SingletonComponent::class)
+@InstallIn(ViewModelComponent::class)
 object RepositoryModule {
 
-    @Singleton
     @Provides
     fun providesPaymentRepo(
         paymentApi: PaymentApi
