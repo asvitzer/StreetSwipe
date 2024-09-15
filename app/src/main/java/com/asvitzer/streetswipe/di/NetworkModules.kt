@@ -41,16 +41,3 @@ object DataSourceModule {
         return retrofit.create(PaymentApi::class.java)
     }
 }
-
-@Module
-@InstallIn(ViewModelComponent::class)
-object RepositoryModule {
-
-    @Provides
-    fun providesPaymentRepo(
-        paymentApi: PaymentApi
-    ): StripePaymentRepo {
-        return StripePaymentRepo(paymentApi)
-    }
-}
-

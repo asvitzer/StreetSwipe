@@ -61,7 +61,7 @@ fun PaymentRequestScreen(
 }
 
 @Composable
-private fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -> Unit) {
+fun PaymentRequestComponent(isLoading: Boolean, onSubmitAmount: (Long) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
