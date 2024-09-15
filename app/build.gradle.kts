@@ -73,6 +73,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    androidTestImplementation(libs.ui.test.junit4)
+    androidTestImplementation(libs.androidx.core)
+    debugImplementation(libs.ui.test.manifest)
 
     //DI
     implementation(libs.hilt.android)

@@ -1,6 +1,7 @@
 [versions]
 agp = "8.5.2"
 converterGson = "2.11.0"
+core = "1.6.1"
 hiltNavigationCompose = "1.2.0"
 kotlin = "1.9.25"
 coreKtx = "1.13.1"
@@ -9,7 +10,7 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.5"
 activityCompose = "1.9.2"
-composeBom = "2024.09.00"
+composeBom = "2024.09.01"
 hiltAndroid = "2.51.1"
 kotlinxCoroutinesAndroid = "1.8.1"
 lifecycleViewmodelKtx = "2.8.5"
@@ -18,8 +19,11 @@ retrofit = "2.11.0"
 navigationComposeVersion = "2.8.0"
 stripeterminalCore = "3.9.1"
 stripeterminalLocalmobile = "3.9.1"
+uiTestJunit4 = "1.7.1"
+uiTestManifest = "1.7.1"
 
 [libraries]
+androidx-core = { module = "androidx.test:core", version.ref = "core" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
@@ -45,6 +49,8 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationComposeVersion" }
 stripeterminal-core = { module = "com.stripe:stripeterminal-core", version.ref = "stripeterminalCore" }
 stripeterminal-localmobile = { module = "com.stripe:stripeterminal-localmobile", version.ref = "stripeterminalLocalmobile" }
+ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "uiTestJunit4" }
+ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "uiTestManifest" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
